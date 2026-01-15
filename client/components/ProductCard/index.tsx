@@ -1,4 +1,4 @@
-// Product Card Component
+// src/components/ProductCard.tsx
 "use client";
 import React, { useState, useEffect } from "react";
 import {
@@ -12,13 +12,38 @@ import {
 } from "lucide-react";
 import ProductDetailModal from "@/components/ProductDetailModal";
 
-export default function ProductCard({ product }: { product: any }) {
+// Define the product prop interface
+interface ProductCardProps {
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    originalPrice?: number;
+    discount?: string;
+    mainImage: string;
+    hoverImage?: string;
+    colors: string[];
+    sizes: string[];
+    hasTimer?: boolean;
+    isNew?: boolean;
+    onQuickAdd?: (product: any, size: string) => void;
+    onWishlist?: (product: any) => void;
+    onCompare?: (product: any) => void;
+    description?: string;
+    stockInfo?: string;
+    isBestSeller?: boolean;
+    images?: string[];
+  };
+}
+
+export default function ProductCard({ product }: ProductCardProps) {
   const {
     name,
     price,
     originalPrice,
     discount,
-    image,
+    mainImage,
+    hoverImage,
     colors = [],
     sizes = ["S", "M", "L", "XL"],
     hasTimer = false,
@@ -26,6 +51,10 @@ export default function ProductCard({ product }: { product: any }) {
     onQuickAdd,
     onWishlist,
     onCompare,
+    description,
+    stockInfo,
+    isBestSeller,
+    images: productImages = [],
   } = product;
 
   const [selectedSize, setSelectedSize] = useState("");
@@ -36,6 +65,9 @@ export default function ProductCard({ product }: { product: any }) {
     minutes: 41,
     seconds: 45,
   });
+
+  // Use main image by default, hover image on hover
+  const [currentImage, setCurrentImage] = useState(mainImage);
 
   useEffect(() => {
     if (!hasTimer) return;
@@ -86,18 +118,32 @@ export default function ProductCard({ product }: { product: any }) {
     if (onCompare) onCompare(product);
   };
 
+  const handleMouseEnter = () => {
+    if (hoverImage) {
+      setCurrentImage(hoverImage);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setCurrentImage(mainImage);
+  };
+
   return (
     <>
       <div className="group">
-        <div className="relative bg-gray-100 rounded-lg overflow-hidden mb-4 aspect-3/4">
+        <div
+          className="relative bg-gray-100 rounded-lg overflow-hidden mb-4 aspect-3/4 duration-300"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
           <img
-            src={image}
+            src={currentImage}
             alt={name}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
 
           {discount && (
-            <div className="absolute top-3 left-3 bg-red-500 text-white text-xs font-medium px-3 py-1 rounded-full">
+            <div className="absolute top-3 right-3 bg-red-500 text-white text-xs font-medium px-3 py-1 rounded-full">
               {discount}
             </div>
           )}
@@ -207,33 +253,41 @@ export default function ProductCard({ product }: { product: any }) {
                   className="w-6 h-6 rounded-full border-2 border-gray-300 hover:border-black transition relative"
                   style={{
                     backgroundColor:
-                      color === "orange"
+                      color.toLowerCase() === "orange"
                         ? "#ff8c42"
-                        : color === "black"
+                        : color.toLowerCase() === "black"
                         ? "#000"
-                        : color === "beige"
+                        : color.toLowerCase() === "beige"
                         ? "#d4a574"
-                        : color === "pink"
+                        : color.toLowerCase() === "pink"
                         ? "#ff69b4"
-                        : color === "lightblue"
+                        : color.toLowerCase() === "lightblue"
                         ? "#add8e6"
-                        : color === "white"
+                        : color.toLowerCase() === "white"
                         ? "#fff"
-                        : color === "purple"
+                        : color.toLowerCase() === "purple"
                         ? "#9b59b6"
-                        : color === "gray"
+                        : color.toLowerCase() === "gray"
                         ? "#808080"
-                        : color === "blue"
+                        : color.toLowerCase() === "blue"
                         ? "#4169e1"
-                        : color === "red"
+                        : color.toLowerCase() === "red"
                         ? "#ef4444"
-                        : color === "green"
+                        : color.toLowerCase() === "green"
                         ? "#10b981"
+                        : color.toLowerCase() === "navy"
+                        ? "#1e3a8a"
+                        : color.toLowerCase() === "teal"
+                        ? "#0d9488"
+                        : color.toLowerCase() === "yellow"
+                        ? "#fbbf24"
+                        : color.toLowerCase() === "brown"
+                        ? "#92400e"
                         : color,
                   }}
                   aria-label={`Select ${color} color`}
                 >
-                  {color === "white" && (
+                  {color.toLowerCase() === "white" && (
                     <div className="absolute inset-0 rounded-full border border-gray-200"></div>
                   )}
                 </button>
@@ -244,7 +298,16 @@ export default function ProductCard({ product }: { product: any }) {
       </div>
 
       <ProductDetailModal
-        product={product}
+        product={{
+          ...product,
+          mainImage: productImages.length > 0 ? productImages[0] : mainImage,
+          hoverImage: productImages.length > 1 ? productImages[1] : hoverImage,
+          description:
+            description ||
+            "Nunc arcu faucibus a et lorem eu a mauris adipiscing conubia ac aptent ligula facilisis a auctor habitant parturient a a.Interdum fermentum.",
+          stockInfo,
+          isBestSeller,
+        }}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />

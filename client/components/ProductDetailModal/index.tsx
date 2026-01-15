@@ -1,3 +1,4 @@
+// src/components/ProductDetailModal.tsx
 "use client";
 import React, { useState, useEffect } from "react";
 import {
@@ -10,8 +11,30 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+// Define the product prop interface
+interface ProductDetailModalProps {
+  product: {
+    name: string;
+    price: number;
+    originalPrice?: number;
+    description: string;
+    colors?: string[];
+    sizes?: string[];
+    mainImage?: string;
+    hoverImage?: string;
+    stockInfo?: string;
+    isBestSeller?: boolean;
+  };
+  isOpen: boolean;
+  onClose: () => void;
+}
+
 // Product Detail Modal Component
-export default function ProductDetailModal({ product, isOpen, onClose }: any) {
+export default function ProductDetailModal({
+  product,
+  isOpen,
+  onClose,
+}: ProductDetailModalProps) {
   const [selectedColor, setSelectedColor] = useState(
     product?.colors?.[0] || "orange"
   );
@@ -21,7 +44,12 @@ export default function ProductDetailModal({ product, isOpen, onClose }: any) {
 
   if (!isOpen || !product) return null;
 
-  const images = product.images || [product.image];
+  const images =
+    product.mainImage && product.hoverImage
+      ? [product.mainImage, product.hoverImage]
+      : product.mainImage
+      ? [product.mainImage]
+      : [];
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -52,8 +80,12 @@ export default function ProductDetailModal({ product, isOpen, onClose }: any) {
       blue: "#4169e1",
       red: "#ef4444",
       green: "#10b981",
+      navy: "#1e3a8a",
+      teal: "#0d9488",
+      yellow: "#fbbf24",
+      brown: "#92400e",
     };
-    return colorMap[color] || color;
+    return colorMap[color.toLowerCase()] || color;
   };
 
   return (
@@ -111,8 +143,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: any) {
               )}
               {product.stockInfo && (
                 <span className="text-sm font-medium text-black">
-                  Selling fast! {product.stockInfo} people have this in their
-                  carts.
+                  Selling fast! {product.stockInfo}
                 </span>
               )}
             </div>
@@ -129,65 +160,68 @@ export default function ProductDetailModal({ product, isOpen, onClose }: any) {
             </div>
 
             <p className="text-gray-600 mb-6 leading-relaxed">
-              {product.description ||
-                "Nunc arcu faucibus a et lorem eu a mauris adipiscing conubia ac aptent ligula facilisis a auctor habitant parturient a a.Interdum fermentum."}
+              {product.description}
             </p>
 
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-black">
-                  Color: <span className="capitalize">{selectedColor}</span>
-                </span>
+            {product.colors && product.colors.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-black">
+                    Color: <span className="capitalize">{selectedColor}</span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  {product.colors.map((color: string) => (
+                    <button
+                      key={color}
+                      onClick={() => setSelectedColor(color)}
+                      className={`w-10 h-10 rounded-full border-2 transition relative ${
+                        selectedColor === color
+                          ? "border-black"
+                          : "border-gray-300"
+                      }`}
+                      style={{ backgroundColor: getColorStyle(color) }}
+                      aria-label={`Select ${color} color`}
+                    >
+                      {color.toLowerCase() === "white" && (
+                        <div className="absolute inset-0 rounded-full border border-gray-200"></div>
+                      )}
+                      {selectedColor === color && (
+                        <div className="absolute inset-0 rounded-full border-2 border-black"></div>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                {product.colors?.map((color: string) => (
-                  <button
-                    key={color}
-                    onClick={() => setSelectedColor(color)}
-                    className={`w-10 h-10 rounded-full border-2 transition relative ${
-                      selectedColor === color
-                        ? "border-black"
-                        : "border-gray-300"
-                    }`}
-                    style={{ backgroundColor: getColorStyle(color) }}
-                    aria-label={`Select ${color} color`}
-                  >
-                    {color === "white" && (
-                      <div className="absolute inset-0 rounded-full border border-gray-200"></div>
-                    )}
-                    {selectedColor === color && (
-                      <div className="absolute inset-0 rounded-full border-2 border-black"></div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
 
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-black">
-                  Size: {selectedSize}
-                </span>
-                <button className="text-sm text-black underline hover:no-underline">
-                  Find your size
-                </button>
-              </div>
-              <div className="flex items-center gap-3">
-                {product.sizes?.map((size: string) => (
-                  <button
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
-                    className={`w-12 h-12 flex items-center justify-center text-sm font-medium border rounded transition ${
-                      selectedSize === size
-                        ? "bg-black text-white border-black"
-                        : "bg-white text-black border-gray-300 hover:border-black"
-                    }`}
-                  >
-                    {size}
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-black">
+                    Size: {selectedSize}
+                  </span>
+                  <button className="text-sm text-black underline hover:no-underline">
+                    Find your size
                   </button>
-                ))}
+                </div>
+                <div className="flex items-center gap-3">
+                  {product.sizes.map((size: string) => (
+                    <button
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      className={`w-12 h-12 flex items-center justify-center text-sm font-medium border rounded transition ${
+                        selectedSize === size
+                          ? "bg-black text-white border-black"
+                          : "bg-white text-black border-gray-300 hover:border-black"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="mb-6">
               <span className="text-sm font-medium text-black block mb-3">

@@ -2,6 +2,24 @@ const UserModel = require("../models/userSchema");
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+const GetAllUsersController = async (req, res) => {
+    try {
+        const users = await UserModel.find({}, '-password');
+
+        if (!users || users.length === 0) {
+            return res.status(404).json({ message: "No users found." });
+        }
+
+        res.status(200).json({
+            message: "Users fetched successfully",
+            userList: users
+        });
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+}
+
 const AuthRegister = async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -72,4 +90,77 @@ const AuthLogin = async (req, res) => {
 
 }
 
-module.exports = { AuthRegister, AuthLogin };
+const DeleteUserController = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const deletedUser = await UserModel.findByIdAndDelete(id);
+
+        if (!deletedUser) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        res.status(200).json({
+            message: "User deleted successfully",
+            user: { _id: deletedUser._id }
+        });
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+}
+
+const UpdateUserController = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, email, password } = req.body;
+
+        // Check if user exists
+        const existingUser = await UserModel.findById(id);
+        if (!existingUser) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        // Check if email is being changed to an existing email
+        if (email && email !== existingUser.email) {
+            const emailExists = await UserModel.findOne({ email });
+            if (emailExists) {
+                return res.status(400).json({ message: "Email already exists." });
+            }
+        }
+
+        const updateData = {
+            name: name || existingUser.name,
+            email: email || existingUser.email,
+            updatedAt: Date.now()
+        };
+
+        // If password is provided, hash it
+        if (password) {
+            if (password.length < 8) {
+                return res.status(400).json({
+                    message: "Password must be at least 8 characters long"
+                });
+            }
+            updateData.password = await bcrypt.hash(password, 10);
+        }
+
+        const updatedUser = await UserModel.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, select: '-password' }
+        );
+
+        res.status(200).json({
+            message: "User updated successfully",
+            user: updatedUser
+        });
+    } catch (error) {
+        console.error("Error updating user:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+}
+
+module.exports = {
+    AuthRegister, AuthLogin, DeleteUserController, UpdateUserController, GetAllUsersController
+};

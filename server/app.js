@@ -4,6 +4,7 @@ const dotenv = require('dotenv').config();
 const userRouter = require("./routers/userRouter");
 const connectDb = require('./db/ConnectDb');
 const cors = require('cors');
+const productRouter = require('./routers/productRouter');
 
 const PORT = 3001;
 
@@ -20,6 +21,7 @@ app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 connectDb();
 
 app.use("/api/v1/auth", userRouter);
+app.use("/api/v1/products", productRouter);
 
 app.listen(PORT, () => {
     console.log(`Server is running on ${PORT}`);
