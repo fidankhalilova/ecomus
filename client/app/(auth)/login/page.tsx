@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import LoginModal from "@/components/LoginModal";
 import RegisterModal from "@/components/RegisterModal";
@@ -8,6 +8,15 @@ export default function LoginPage() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(true);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const router = useRouter();
+
+  // Check if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      console.log("Already logged in, redirecting...");
+      router.push("/");
+    }
+  }, [router]);
 
   const switchToRegister = () => {
     setIsLoginModalOpen(false);
@@ -20,36 +29,36 @@ export default function LoginPage() {
   };
 
   const handleAuthSuccess = () => {
-    // Close modals first
-    setIsLoginModalOpen(false);
-    setIsRegisterModalOpen(false);
+    console.log("Auth success - redirecting...");
 
-    // Use router.replace instead of router.push
-    router.push("/");
+    // Check if token is saved before redirecting
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
 
-    // Force refresh after navigation
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
+    console.log("Token before redirect:", token ? "✅ Saved" : "❌ Not saved");
+    console.log("User before redirect:", user ? "✅ Saved" : "❌ Not saved");
+
+    if (!token) {
+      console.error("Token not saved! Something went wrong.");
+      return;
+    }
+
+    // Use window.location for immediate redirect
+    window.location.href = "/";
   };
 
-  // Simple close function - just close modals without redirect
   const closeModal = () => {
-    setIsLoginModalOpen(false);
-    setIsRegisterModalOpen(false);
+    router.push("/");
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Main content with backdrop */}
       <div className="grow flex items-center justify-center relative">
-        {/* Dark overlay - click to close */}
         <div
           className="absolute inset-0 bg-black/40 z-10"
-          onClick={closeModal} // Click overlay to close
+          onClick={closeModal}
         ></div>
 
-        {/* Login Modal */}
         <LoginModal
           isOpen={isLoginModalOpen}
           onClose={closeModal}
@@ -57,7 +66,6 @@ export default function LoginPage() {
           onSuccess={handleAuthSuccess}
         />
 
-        {/* Register Modal */}
         <RegisterModal
           isOpen={isRegisterModalOpen}
           onClose={closeModal}

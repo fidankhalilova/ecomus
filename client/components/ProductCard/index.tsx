@@ -124,6 +124,27 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
   };
 
+  const getColorStyle = (colorName: string) => {
+    const colorMap: any = {
+      orange: "#ff8c42",
+      black: "#000",
+      beige: "#d4a574",
+      pink: "#ff69b4",
+      lightblue: "#add8e6",
+      white: "#fff",
+      purple: "#9b59b6",
+      gray: "#808080",
+      blue: "#4169e1",
+      red: "#ef4444",
+      green: "#10b981",
+      navy: "#1e3a8a",
+      teal: "#0d9488",
+      yellow: "#fbbf24",
+      brown: "#92400e",
+    };
+    return colorMap[colorName.toLowerCase()] || colorName;
+  };
+
   const handleMouseLeave = () => {
     setCurrentImage(mainImage);
   };
@@ -256,34 +277,36 @@ export default function ProductCard({ product }: ProductCardProps) {
                       color.toLowerCase() === "orange"
                         ? "#ff8c42"
                         : color.toLowerCase() === "black"
-                        ? "#000"
-                        : color.toLowerCase() === "beige"
-                        ? "#d4a574"
-                        : color.toLowerCase() === "pink"
-                        ? "#ff69b4"
-                        : color.toLowerCase() === "lightblue"
-                        ? "#add8e6"
-                        : color.toLowerCase() === "white"
-                        ? "#fff"
-                        : color.toLowerCase() === "purple"
-                        ? "#9b59b6"
-                        : color.toLowerCase() === "gray"
-                        ? "#808080"
-                        : color.toLowerCase() === "blue"
-                        ? "#4169e1"
-                        : color.toLowerCase() === "red"
-                        ? "#ef4444"
-                        : color.toLowerCase() === "green"
-                        ? "#10b981"
-                        : color.toLowerCase() === "navy"
-                        ? "#1e3a8a"
-                        : color.toLowerCase() === "teal"
-                        ? "#0d9488"
-                        : color.toLowerCase() === "yellow"
-                        ? "#fbbf24"
-                        : color.toLowerCase() === "brown"
-                        ? "#92400e"
-                        : color,
+                          ? "#000"
+                          : color.toLowerCase() === "beige"
+                            ? "#d4a574"
+                            : color.toLowerCase() === "pink"
+                              ? "#ff69b4"
+                              : color.toLowerCase() === "lightblue"
+                                ? "#add8e6"
+                                : color.toLowerCase() === "white"
+                                  ? "#fff"
+                                  : color.toLowerCase() === "purple"
+                                    ? "#9b59b6"
+                                    : color.toLowerCase() === "gray"
+                                      ? "#808080"
+                                      : color.toLowerCase() === "blue"
+                                        ? "#4169e1"
+                                        : color.toLowerCase() === "red"
+                                          ? "#ef4444"
+                                          : color.toLowerCase() === "green"
+                                            ? "#10b981"
+                                            : color.toLowerCase() === "navy"
+                                              ? "#1e3a8a"
+                                              : color.toLowerCase() === "teal"
+                                                ? "#0d9488"
+                                                : color.toLowerCase() ===
+                                                    "yellow"
+                                                  ? "#fbbf24"
+                                                  : color.toLowerCase() ===
+                                                      "brown"
+                                                    ? "#92400e"
+                                                    : color,
                   }}
                   aria-label={`Select ${color} color`}
                 >
@@ -296,15 +319,26 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
         </div>
       </div>
-
       <ProductDetailModal
         product={{
-          ...product,
-          mainImage: productImages.length > 0 ? productImages[0] : mainImage,
-          hoverImage: productImages.length > 1 ? productImages[1] : hoverImage,
+          id: product.id, // Convert id to _id
+          name: product.name,
+          price: product.price,
+          originalPrice: product.originalPrice,
           description:
             description ||
             "Nunc arcu faucibus a et lorem eu a mauris adipiscing conubia ac aptent ligula facilisis a auctor habitant parturient a a.Interdum fermentum.",
+          colors: product.colors.map((color) => ({
+            id: color.toLowerCase(), // Create a simple _id from color name
+            name: color,
+            colorCode: getColorStyle(color), // You need to implement getColorCode
+          })),
+          sizes: product.sizes.map((size) => ({
+            id: size, // Create a simple _id from size
+            name: size,
+          })),
+          mainImage: productImages.length > 0 ? productImages[0] : mainImage,
+          hoverImage: productImages.length > 1 ? productImages[1] : hoverImage,
           stockInfo,
           isBestSeller,
         }}

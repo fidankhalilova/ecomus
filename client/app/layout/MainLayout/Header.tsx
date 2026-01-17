@@ -11,12 +11,52 @@ import {
   LogOut,
 } from "lucide-react";
 import Link from "next/link";
+import CartModal from "@/components/AddToCartModal";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showCartModal, setShowCartModal] = useState(false); // Add this state
+  const [cartCount, setCartCount] = useState(0); // Add this state
+
+  const fetchCartCount = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setCartCount(0);
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:3001/api/v1/cart", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setCartCount(data.cart.totalItems || 0);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching cart count:", error);
+    }
+  };
+
+  // Listen for cart updates
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      fetchCartCount();
+    };
+
+    window.addEventListener("cartUpdated", handleCartUpdate);
+    return () => {
+      window.removeEventListener("cartUpdated", handleCartUpdate);
+    };
+  }, []);
 
   // Check auth state on component mount and when auth state changes
   useEffect(() => {
@@ -41,12 +81,14 @@ export default function Header() {
       try {
         const user = JSON.parse(userData);
         setUserName(user.name || user.email.split("@")[0]);
+        fetchCartCount(); // Fetch cart count when logged in
       } catch (e) {
         setUserName("User");
       }
     } else {
       setIsLoggedIn(false);
       setUserName("");
+      setCartCount(0);
     }
   };
 
@@ -181,11 +223,16 @@ export default function Header() {
                 </span>
               </button>
 
-              <button className="text-black hover:text-black transition relative">
+              <button
+                onClick={() => setShowCartModal(true)}
+                className="text-black hover:text-black transition relative"
+              >
                 <ShoppingCart size={22} />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-medium">
-                  0
-                </span>
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-medium">
+                    {cartCount}
+                  </span>
+                )}
               </button>
 
               <button
@@ -329,6 +376,11 @@ export default function Header() {
           onClick={() => setShowUserDropdown(false)}
         />
       )}
+
+      <CartModal
+        isOpen={showCartModal}
+        onClose={() => setShowCartModal(false)}
+      />
     </header>
   );
 }

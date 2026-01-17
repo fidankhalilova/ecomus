@@ -1,4 +1,4 @@
-// src/components/ProductDetailModal.tsx
+// app/components/ProductDetailModal.tsx
 "use client";
 import React, { useState, useEffect } from "react";
 import {
@@ -14,12 +14,14 @@ import {
 // Define the product prop interface
 interface ProductDetailModalProps {
   product: {
+    id: string;
     name: string;
     price: number;
+    discountedPrice?: number;
     originalPrice?: number;
     description: string;
-    colors?: string[];
-    sizes?: string[];
+    colors?: Array<{ id: string; name: string; colorCode?: string }>;
+    sizes?: Array<{ id: string; name: string }>;
     mainImage?: string;
     hoverImage?: string;
     stockInfo?: string;
@@ -35,12 +37,21 @@ export default function ProductDetailModal({
   isOpen,
   onClose,
 }: ProductDetailModalProps) {
-  const [selectedColor, setSelectedColor] = useState(
-    product?.colors?.[0] || "orange"
-  );
-  const [selectedSize, setSelectedSize] = useState("S");
+  const [selectedColor, setSelectedColor] = useState<string>("");
+  const [selectedSize, setSelectedSize] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [addingToCart, setAddingToCart] = useState(false);
+
+  // Initialize selections
+  useEffect(() => {
+    if (product.colors && product.colors.length > 0) {
+      setSelectedColor(product.colors[0].id);
+    }
+    if (product.sizes && product.sizes.length > 0) {
+      setSelectedSize(product.sizes[0].id);
+    }
+  }, [product]);
 
   if (!isOpen || !product) return null;
 
@@ -48,8 +59,8 @@ export default function ProductDetailModal({
     product.mainImage && product.hoverImage
       ? [product.mainImage, product.hoverImage]
       : product.mainImage
-      ? [product.mainImage]
-      : [];
+        ? [product.mainImage]
+        : [];
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -67,7 +78,7 @@ export default function ProductDetailModal({
     setQuantity(quantity + 1);
   };
 
-  const getColorStyle = (color: string) => {
+  const getColorStyle = (colorName: string) => {
     const colorMap: any = {
       orange: "#ff8c42",
       black: "#000",
@@ -85,7 +96,86 @@ export default function ProductDetailModal({
       yellow: "#fbbf24",
       brown: "#92400e",
     };
-    return colorMap[color.toLowerCase()] || color;
+    return colorMap[colorName.toLowerCase()] || colorName;
+  };
+
+  // Find color name by ID
+  const getColorNameById = (colorId: string) => {
+    const color = product.colors?.find((c) => c.id === colorId);
+    return color?.name || "";
+  };
+
+  // Handle Add to Cart
+  const handleAddToCart = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please login to add items to cart");
+      return;
+    }
+
+    // Validate selections
+    if (product.sizes?.length && !selectedSize) {
+      alert("Please select a size");
+      return;
+    }
+
+    if (product.colors?.length && !selectedColor) {
+      alert("Please select a color");
+      return;
+    }
+
+    setAddingToCart(true);
+
+    try {
+      console.log("🛒 Adding to cart with:", {
+        productId: product.id,
+        sizeValue: selectedSize, // This is "L", "M", etc.
+        colorValue: selectedColor, // This is "blue", "red", etc.
+        quantity: quantity,
+      });
+
+      // Get the actual size name (not ID)
+      const selectedSizeObj = product.sizes?.find((s) => s.id === selectedSize);
+      const selectedColorObj = product.colors?.find(
+        (c) => c.id === selectedColor,
+      );
+
+      const requestBody: any = {
+        productId: product.id,
+        quantity: quantity,
+      };
+
+      // Send the size/color NAME as string, not ID
+      if (selectedSizeObj) {
+        requestBody.sizeId = selectedSizeObj.name; // Send "L" not ObjectId
+      }
+
+      if (selectedColorObj) {
+        requestBody.colorId = selectedColorObj.name; // Send "blue" not ObjectId
+      }
+
+      console.log("📤 Request body:", requestBody);
+
+      const response = await fetch("http://localhost:3001/api/v1/cart/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      // ... rest of your existing code
+    } catch (error) {
+      console.error("❌ Error adding to cart:", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to add item to cart. Please try again.",
+      );
+    } finally {
+      setAddingToCart(false);
+    }
   };
 
   return (
@@ -167,26 +257,32 @@ export default function ProductDetailModal({
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-medium text-black">
-                    Color: <span className="capitalize">{selectedColor}</span>
+                    Color:{" "}
+                    <span className="capitalize">
+                      {getColorNameById(selectedColor)}
+                    </span>
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  {product.colors.map((color: string) => (
+                  {product.colors.map((color: any) => (
                     <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
+                      key={color.id}
+                      onClick={() => setSelectedColor(color.id)}
                       className={`w-10 h-10 rounded-full border-2 transition relative ${
-                        selectedColor === color
+                        selectedColor === color.id
                           ? "border-black"
                           : "border-gray-300"
                       }`}
-                      style={{ backgroundColor: getColorStyle(color) }}
-                      aria-label={`Select ${color} color`}
+                      style={{
+                        backgroundColor:
+                          color.colorCode || getColorStyle(color.name),
+                      }}
+                      aria-label={`Select ${color.name} color`}
                     >
-                      {color.toLowerCase() === "white" && (
+                      {color.name.toLowerCase() === "white" && (
                         <div className="absolute inset-0 rounded-full border border-gray-200"></div>
                       )}
-                      {selectedColor === color && (
+                      {selectedColor === color.id && (
                         <div className="absolute inset-0 rounded-full border-2 border-black"></div>
                       )}
                     </button>
@@ -199,24 +295,26 @@ export default function ProductDetailModal({
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-medium text-black">
-                    Size: {selectedSize}
+                    Size:{" "}
+                    {product.sizes.find((s) => s.id === selectedSize)?.name ||
+                      ""}
                   </span>
                   <button className="text-sm text-black underline hover:no-underline">
                     Find your size
                   </button>
                 </div>
                 <div className="flex items-center gap-3">
-                  {product.sizes.map((size: string) => (
+                  {product.sizes.map((size: any) => (
                     <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
+                      key={size.id}
+                      onClick={() => setSelectedSize(size.id)}
                       className={`w-12 h-12 flex items-center justify-center text-sm font-medium border rounded transition ${
-                        selectedSize === size
+                        selectedSize === size.id
                           ? "bg-black text-white border-black"
                           : "bg-white text-black border-gray-300 hover:border-black"
                       }`}
                     >
-                      {size}
+                      {size.name}
                     </button>
                   ))}
                 </div>
@@ -249,8 +347,37 @@ export default function ProductDetailModal({
             </div>
 
             <div className="flex items-center gap-3 mb-6">
-              <button className="flex-1 h-14 bg-black text-white font-medium rounded hover:bg-gray-800 transition">
-                Add to cart - ${(product.price * quantity).toFixed(2)}
+              <button
+                onClick={handleAddToCart}
+                disabled={addingToCart}
+                className="flex-1 h-14 bg-black text-white font-medium rounded hover:bg-gray-800 transition disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {addingToCart ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag size={20} />
+                    {/* Calculate price with discount */}
+                    Add to cart - $
+                    {(
+                      (product.discountedPrice || product.price) * quantity
+                    ).toFixed(2)}
+                    {/* Show discount badge if applicable */}
+                    {product.discountedPrice &&
+                      product.discountedPrice < product.price && (
+                        <span className="ml-2 text-xs bg-green-500 text-white px-2 py-1 rounded">
+                          Save $
+                          {(
+                            (product.price - product.discountedPrice) *
+                            quantity
+                          ).toFixed(2)}
+                        </span>
+                      )}
+                  </>
+                )}
               </button>
               <button className="w-14 h-14 border border-gray-300 rounded flex items-center justify-center hover:border-black transition">
                 <Heart size={20} />

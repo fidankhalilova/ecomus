@@ -73,21 +73,51 @@ const AuthLogin = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+        return res.status(400).json({
+            success: false,  // ← Add this
+            message: "Email and password are required"
+        });
     }
+
     const existingUserByEmail = await UserModel.findOne({ email });
     if (!existingUserByEmail) {
-        return res.status(404).json({ message: "User not found" });
+        return res.status(404).json({
+            success: false,  // ← Add this
+            message: "User not found"
+        });
     }
-    const isPasswordValid = await bcrypt.compare(password, existingUserByEmail.password);
-    const payload = {
-        email,
-        password,
-    }
-    const token = jwt.sign({ email: existingUserByEmail.email }, process.env.SECURITY_KEY, { expiresIn: '1h' });
-    res.cookie('token', token, { httpOnly: true, secure: true, maxage: 3600000 });
-    res.status(200).json({ message: "Login successful", token, user: existingUserByEmail });
 
+    const isPasswordValid = await bcrypt.compare(password, existingUserByEmail.password);
+    if (!isPasswordValid) {
+        return res.status(401).json({
+            success: false,  // ← Add this
+            message: "Invalid password"
+        });
+    }
+
+    const token = jwt.sign({
+        userId: existingUserByEmail._id,
+        email: existingUserByEmail.email
+    }, process.env.SECURITY_KEY, { expiresIn: '1h' });
+
+    // Set cookie (optional)
+    res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 3600000
+    });
+
+    // Return response in the format frontend expects
+    res.status(200).json({
+        success: true,  // ← This is crucial!
+        message: "Login successful",
+        token,
+        user: {
+            _id: existingUserByEmail._id,
+            name: existingUserByEmail.name,
+            email: existingUserByEmail.email
+        }
+    });
 }
 
 const DeleteUserController = async (req, res) => {
